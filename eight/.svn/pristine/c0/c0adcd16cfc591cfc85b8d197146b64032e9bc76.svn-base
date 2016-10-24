@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>选择收货地址</title>
+		<meta content="telephone=no" name="format-detection">
+		<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+		<meta content="yes" name="apple-mobile-web-app-capable">
+		<meta content="black" name="apple-mobile-web-app-status-bar-style">
+		<meta content="on" http-equiv="cleartype">
+		<!--build:css inline  -->
+		<link rel="stylesheet" type="text/css" href="assets/css/1reset.css" />
+		<link rel="stylesheet" type="text/css" href="assets/css/2layout.css" />
+		<link rel="stylesheet" type="text/css" href="assets/css/common.css" />
+		<!-- /build -->
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+			}
+			
+			.lp_position i {
+				display: inline-block;
+				width: 1rem;
+				height: 1rem;
+				background: url(assets/images/lp_position.png) no-repeat;
+				background-size: 100% auto;
+				vertical-align: middle;
+				margin-right: 3px;
+			}
+
+			.lp_position a{
+				display: block;
+			}
+
+
+			.lp_search {
+				background: #fff;
+				padding: 0.625rem;
+			}
+
+			.lp_search a.btn{
+				color :#fff;
+				background: #ccc;
+				padding: 0.3rem 0.625rem;
+
+			}
+			
+			.lp_search i {
+				display: inline-block;
+				height: 1rem;
+				width: 1rem;
+				background: url(assets/images/lp_search.png) no-repeat;
+				background-size: 100%;
+				vertical-align: middle;
+			}
+			
+			.lp_search p {
+				display: table-cell;
+				vertical-align: middle;
+				width: 91%;
+				padding-left: 1rem;
+			}
+			
+			.lp_search_right {
+				width: 93%;
+			}
+			
+			.lp_search input {
+				height: 1.5rem;
+				width: 100%;
+				border: none;
+				font-size: 0.875rem;
+			}
+			
+			.lp_searchAddrList {
+				margin: 0.625rem auto;
+				padding: 0 0.625rem;
+				z-index: 2;
+				background-color: #fff;
+				border-top: 1px solid #f0f0f0;
+				border-bottom: 1px solid #f0f0f0;
+			}
+			
+			.lp_dpn {
+				display: none;
+			}
+			
+			#lp_addrList {
+				margin-top: 30px;
+			}
+
+			.addr-wrap{
+				padding: 0.625rem 0;
+				color: #444;
+			}
+			.addr-wrap .addr{
+				background: #fff;
+				margin: 0.3rem 0 0.625rem 0;
+				padding: 0 0.625rem;
+				line-height: 1.5rem;
+			}
+			.addr-wrap .cur-addr{
+				padding: 0.5rem 0.625rem;
+			}
+			.p-label{
+				padding: 0 0.625rem;
+				color: #969696;
+			}
+			.addr-wrap li,
+			#lp_searchAddrListData li{
+				padding: 0.625rem 0;
+				border-bottom: 1px solid #efefef;
+			}
+			.addr-wrap li:last-child{
+				border-bottom: 0;
+			}
+			.addr-wrap p.user{
+				font-weight: bold;
+			}
+			.addr-wrap p.user-addr{
+				color: #969696;
+			}
+
+			/*旋转动画*/
+			@-webkit-keyframes rotate {
+			  from {-webkit-transform:rotate(0deg);}
+			  to {-webkit-transform:rotate(360deg);}
+			}
+
+			/*正在定位中样式(旋转动画)*/
+			.posing {
+			  overflow: hidden;
+			  -webkit-animation-name: rotate;
+			  -webkit-animation-duration: 0.1s;
+			  -webkit-animation-iteration-count: infinite;
+			  -webkit-animation-timing-function: linear;
+			}
+		</style>
+	</head>
+
+	<body ng-app="locationApp" ng-controller="LocationController">
+	<!--搜索框-->
+		<div class="lp_search">
+			<div class=" table w100 ">
+				<div class="cell" style="width:1.5rem;"> <i></i>
+				</div>
+				<div class="cell">
+					<input type="text" id="search_addr" placeholder="请输入所在写字楼/小区/学校等"
+						 ng-model="searchText" ng-change="search()"/>
+				</div>
+				<div class="cell tr">
+					<a href="javascript:" id="cancel" class="btn"
+					   ng-show="showSearch" ng-click="cancleSearch()">取消</a>
+				</div>
+			</div>
+		</div>
+	<!--显示列表-->
+		<div class="lp_searchAddrList" ng-show="showSearch">
+			<ul id="lp_searchAddrListData">
+				<li class="addrItem" ng-repeat="searchAddr in searchAddrArr" ng-bind="searchAddr.name"
+					ng-click="toIndex(searchAddr)">
+				</li>
+			</ul>
+		</div>
+	<!--当前地址、附近地址、送货地址-->
+		<div class="addr-wrap" id="info" ng-hide="showSearch">
+			<p class="p-label">当前位置</p>
+			<div class="addr cur-addr table w100">
+				<div class="cell addrItem" ng-bind="currentAddr.name" ng-click="toIndex(currentAddr)"></div>
+				<div class="lp_position cell tr" >
+					<a id="doPos" href="javascript:" ng-click="relocation()"><i ng-class="{posing:locating}"></i>重新定位</a>
+				</div>
+			</div>
+			<p class="p-label">附近地址</p>
+			<div class="addr">
+				<ul>
+					<li class="addrItem" ng-repeat="aroundAddr in aroundAddrArr" ng-bind="aroundAddr.name"
+						ng-click="toIndex(aroundAddr)"></li>
+					<li style="position:relative;">
+						<a style="display:block;width:100%;height:100%;" href="chooseCoordinate.html">
+							更多地址 <span class="fr nav-left" style="position:absolute;right:0;top:50%;margin-top:-5px;"></span>
+						</a>
+					</li>
+				</ul>
+			</div>
+			<p class="p-label">收货地址</p>
+			<div class="addr">
+				<ul>
+					<li class="addrItem" ng-repeat="address in addressArr" ng-click="toIndex(address)">
+						<p class="user" ng-bind="address.contactor+' '+address.phone"></p>
+						<p class="user-addr" ng-bind="address.address+address.doorplate"></p>
+					</li>
+				</ul>
+			</div>
+		</div>
+
+		<script type="text/javascript" src="assets/js/angular.js"></script>
+		<script type="text/javascript">
+		    angular.module('locationApp',[])
+					.controller('LocationController', function($scope, $http){
+						//判断用户是否登录
+						var userJson = localStorage.getItem('_user_');
+						if(userJson == null){
+							alert('请先登录');
+							window.location = 'login.html';
+						}
+						//搜索地址
+						$scope.showSearch = false;
+						$scope.search = function () {
+							var searchText = $scope.searchText;
+							var url = 'http://api.map.baidu.com/place/v2/search?q='+searchText+
+									'&region=北京&output=json&ak=aDvS9fDTEwGEUFRiVlTt6koBLHTcYTny'+
+									'&callback=JSON_CALLBACK';
+							$http.jsonp(url)
+									.success(function (data) {
+										$scope.showSearch = true;
+										$scope.searchAddrArr = data.results;
+										/*var searchAddrArr = [];
+										data.results.forEach(function (item) {
+											searchAddrArr.push({
+												name : item.name,
+												lat : item.location.lat,//如果把lat和lng在toInex函数中存到session
+												lng : item.location.lng//如果把lat和lng在toInex函数中存到session
+											});
+										});
+										$scope.searchAddrArr = searchAddrArr;*/
+									})
+									.error(function (result) {
+										alert('向百度地图API发送请求搜索地址失败');
+									});
+						};
+						//取消搜索框
+						$scope.cancleSearch = function(){
+							$scope.showSearch = false;
+							$scope.searchText = '';
+							$scope.searchAddrArr = null;
+						};
+
+						//当前地址: currentAddr
+						var currentAddrJson = sessionStorage.getItem('_location_addr_');
+						$scope.currentAddr = JSON.parse(currentAddrJson);
+						console.log($scope.currentAddr);
+						showAroundAddrs();
+						//附近地址: aroundAddrArr
+						function showAroundAddrs() {
+							var url = 'http://api.map.baidu.com/place/v2/search?q='+$scope.currentAddr.name+
+									'&region=北京&output=json&ak=aDvS9fDTEwGEUFRiVlTt6koBLHTcYTny'+
+									'&callback=JSON_CALLBACK';
+							$http.jsonp(url)
+									.success(function (data) {
+										$scope.aroundAddrArr = data.results;
+										/*var aroundAddrArr = [];
+										 data.results.forEach(function (item) {
+										 aroundAddrArr.push({
+										 name : item.name,
+										 lat : item.location.lat, //如果把lat和lng在toInex函数中存到session
+										 lng : item.location.lng		//如果把lat和lng在toInex函数中存到session
+										 });
+										 });
+										 $scope.aroundAddrArr = aroundAddrArr;*/
+									})
+									.error(function (result) {
+										alert('向百度API请求附近地址失败');
+									});
+						}
+
+						//重新定位:relocation()
+						$scope.isposing = false;
+						$scope.relocation = function () {
+							$scope.isposing = true;
+							//动态请求百度地图API
+							var script = document.createElement("script");
+							script.type = "text/javascript";
+							script.src = "http://api.map.baidu.com/api" +
+									"?v=2.0&ak=aDvS9fDTEwGEUFRiVlTt6koBLHTcYTny&callback=showLocation";
+							document.body.appendChild(script);
+						};
+						//创建showLocation 回调函数
+						function showLocation() {
+							//创建一个定位对象
+							var geolocation = new BMap.Geolocation();
+
+							//获取当前的定位
+							geolocation.getCurrentPosition(function(r){
+								if(this.getStatus() == BMAP_STATUS_SUCCESS){//成功了
+									var point = r.point;
+									//创建用来得到地址的对象
+									var geoc = new BMap.Geocoder();
+									//获取指定point的地址
+									geoc.getLocation(point, function(rs){
+										if(rs==null)
+											return;
+										//得到结果中的地址组件对象
+										var addComp = rs.addressComponents;
+
+										$scope.$apply(function () {//必须使用$apply
+											$scope.locationAddr.name = addComp.city+addComp.district
+													+addComp.street+addComp.streetNumber;
+											//保存地址到sessionStorage
+											$scope.locationAddr.lat = point.lat;
+											$scope.locationAddr.lng = point.lng;
+											$scope.locating = false;
+
+											showAroundAddrs();
+										});
+
+									});
+								}
+								else {
+									$scope.$apply(function () {
+										$scope.locating = false;
+									});
+									alert('failed'+this.getStatus());
+								}
+							},{enableHighAccuracy: true})
+						}
+						//收货地址: addressArr (ajax 请求)
+						var user = JSON.parse(userJson);
+						$http.get('/getAddrsByUserId?userId='+ user._id)
+								.success(function (result) {
+									$scope.addressArr = result.data;
+								})
+								.error(function (result) {
+								    alert('你发送的请求失败')
+								});
+
+						//显示在index页面中
+						$scope.toIndex = function (address) {
+						    var addr = {
+								name:address.name || address.address
+								/*lat:address.lat,
+								lng:address.lng*/
+							};
+							sessionStorage.setItem('_location_addr_',JSON.stringify(addr));
+							window.location = 'index.html';
+						}
+
+					});
+		</script>
+	</body>
+</html>

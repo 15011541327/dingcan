@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>选择所在坐标</title>
+	<meta content="telephone=no" name="format-detection">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+	<meta content="yes" name="apple-mobile-web-app-capable">
+	<meta content="black" name="apple-mobile-web-app-status-bar-style">
+	<meta content="on" http-equiv="cleartype">
+	<!--build:css inline  -->
+	<link rel="stylesheet" type="text/css" href="assets/css/1reset.css" />
+	<link rel="stylesheet" type="text/css" href="assets/css/2layout.css" />
+	<link rel="stylesheet" type="text/css" href="assets/css/common.css" />
+	<!-- /build -->
+	<style>
+		.cc_main {
+			width: 100%;
+			height: 100%;
+		}
+
+		.cc_input {
+			width: 97%;
+			margin: 10px auto;
+			background: #fff;
+			overflow: hidden;
+			height: 2.81rem;
+			line-height: 2.81rem;
+			padding-left: 10px;
+		}
+
+		.cc_search {
+			height: 2.81rem;
+			line-height: 2.81rem;
+			margin: 10px 0;
+		}
+
+		.cc_search em {
+			width: 1.38rem;
+			height: 1.38rem;
+			margin: 2px 0;
+			display: inline-block;
+			background: url(assets/images/lp_search.png) no-repeat;
+			background-size: 100%;
+		}
+
+		.cc_input input {
+			height: 2rem;
+			border: none;
+			width: 63%;
+			margin-left: 10px;
+		}
+
+		.cc_btn {
+			background: #eb3c3c;
+			color: #fff;
+			width: 19%;
+			text-align: center;
+			font-size: 1.06rem;
+		}
+
+		.cc_map {
+			width: 100%;
+			height: 15.19rem;
+			background: #fff;
+			overflow: hidden;
+		}
+
+		.cc_maplist {
+			width: 97%;
+			margin: 10px auto;
+			background: #fff;
+		}
+
+		.cc_maplist li {
+			overflow: hidden;
+		}
+
+		.cc_maplist li p:nth-child(1) {
+			width: 20%;
+			border-right: 1px solid #f0f0f0;
+		}
+
+		.cc_maplist li p:nth-child(2) {
+			padding-left: 10px;
+		}
+
+		.cc_maplist li p {
+			/*display: table-cell;
+            vertical-align: middle;*/
+			text-align: center;
+		}
+
+		.cc_maplist li p em {
+			width: 0.625rem;
+			height: 1rem;
+			display: inline-block;
+			background: url(assets/images/ana_search.png) no-repeat;
+			background-size: 100%;
+		}
+
+		.cc_maplist li {
+			line-height: 2.75rem;
+			border-bottom: 1px solid #f0f0f0;
+		}
+
+		.cc_main_map {
+			position: relative;
+		}
+
+		.cc_icon {
+			width: 1.83rem;   /*2.69rem*/
+			height: 3rem;  /*3.625rem*/
+			position: absolute;
+			top: 24%;
+			left: 50%;
+			margin-left: -1.23rem;
+		}
+
+		.cc_icon img {
+			width: 100%;
+		}
+	</style>
+</head>
+
+<body ng-app="mapApp" ng-controller="MapController">
+<div class="cc_main">
+	<div>
+		<input type="text" ng-model="searchText">
+		<button ng-click="search()">搜索</button>
+	</div>
+	<div class="cc_main_map">
+		<div class="cc_map" id="cc_map">
+			<!--<img src="assets/images/map.png" style="width:100%;height:100%;">-->
+		</div>
+		<div class="cc_icon">
+			<!--<img src="assets/images/position_icon2.png" />-->
+		</div>
+	</div>
+
+	<div class="cc_maplist">
+		<ul id="cc_searchAddrListData">
+			<li class="lp_searchLi" ng-repeat="addr in mapApp" ng-click="add(addr) ">
+				<p class="fl">
+					<em></em>
+				</p>
+				<p class="fl">
+					<a href="#" ng-bind="addr.address"></a>
+				</p>
+			</li>
+		</ul>
+	</div>
+</div>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=aDvS9fDTEwGEUFRiVlTt6koBLHTcYTny"></script>
+<script type="text/javascript" src="assets/js/angular.js"></script>
+	<script type="text/javascript">
+	angular.module('mapApp',[])
+			.controller('MapController', function($scope,$http) {
+				//创建Map实例
+				var map = new BMap.Map("cc_map");
+				//中心点坐标
+				var locationAddr = JSON.parse(sessionStorage.getItem('_location_addr_'));
+				var point = new BMap.Point(locationAddr.lng, locationAddr.lat);
+				//监视移动完成
+				map.addEventListener('dragend', showList);
+				//监视绽放完成
+				map.addEventListener('zoomend', showList);
+				//显示
+				map.centerAndZoom(point, 8);//缩放级别为8
+				//2s后通过设置缩放级别将地图放大14
+				/*setTimeout(function () {
+					map.setZoom(14);
+				},2000);*///2s后放大14级
+				var center = map.getCenter();
+				map.enableScrollWheelZoom(true);
+				var marker = new BMap.Marker(center);  // 创建标注
+				map.addOverlay(marker);              // 将标注添加到地图中
+				marker.setAnimation(BMAP_ANIMATION_BOUNCE); //跳动的动画
+
+				//显示列表
+				function showList() {
+					map.clearOverlays();	//清除覆盖物
+					//得到中心点坐标
+					var center = map.getCenter();
+					//ajax请求得到附近地址列表
+					var url = 'http://api.map.baidu.com/geocoder/v2/?ak=aDvS9fDTEwGEUFRiVlTt6koBLHTcYTny' +
+							'&callback=JSON_CALLBACK&location='+center.lat+','+center.lng+'&output=json&pois=1';
+					$http.jsonp(url)
+							.success(function (data) {
+								$scope.mapApp = [] ;
+								var result = data.result;
+								var cityId = result.cityCode;
+								result.pois.forEach(function (item) {
+									$scope.mapApp.push({
+										cityId : cityId,
+										lat : item.point.y,
+										lng : item.point.x,
+										address : item.addr
+									})
+								})
+							})
+							.error(function (result) {
+								alert(result);
+							});
+					var marker = new BMap.Marker(center);  // 创建标注
+					map.addOverlay(marker);              // 将标注添加到地图中
+					marker.setAnimation(BMAP_ANIMATION_BOUNCE); //跳动的动画
+					$scope.search = function () {
+					    var searchText = $scope.searchText;
+						//创建地址解析器实例
+						var myGeo = new BMap.Geocoder();
+						//将地址解析结果显示在地图上，并调整地图视野
+						myGeo.getPoint(searchText,function (point) {
+						    if(point){
+								//更新地图
+								map.centerAndZoom(point,8);
+								//显示列表
+								showList();
+							}else{
+								alert('您选择地址没有解析到结果!');
+							}
+						},'北京市');
+					};
+					$scope.add = function (address) {
+						var newAddrJson = sessionStorage.getItem('_new_addr_');
+						if(newAddrJson != null){
+							//获取地址
+							sessionStorage.setItem('_mapAddr_',JSON.stringify( address));
+							window.location = 'addNewAddr.html';
+						}else{
+							address.name = address.address;
+							sessionStorage.setItem('_location_addr_',JSON.stringify(address));
+							window.location = 'index.html';
+						}
+					}
+
+				}
+
+			});
+	</script>
+</body>
+</html>
+
+
+
+
+
+
